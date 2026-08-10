@@ -1,0 +1,22 @@
+{
+  "name": "fitstore-core",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Abhi071998/FitStore-core#readme",
+  "bugs": {
+    "url": "https://github.com/Abhi071998/FitStore-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abhi071998/FitStore-core.git"
+  },
+  "license": "ISC",
+  "author": "karthik vignesh",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
