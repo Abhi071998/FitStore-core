@@ -1,19 +1,21 @@
 import 'dotenv/config';
+import './utils/bigint.js';
 import app from './app.js';
 import prisma from './config/prisma.js';
+import logger from './config/logger.js';
 
 const PORT = process.env.PORT || 4000;
 
 async function start() {
   try {
     await prisma.$connect();
-    console.log('Database connected');
+    logger.info('Database connected');
 
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      logger.info(`Server running on http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error('Failed to start server:', err);
+    logger.error(err, 'Failed to start server');
     process.exit(1);
   }
 }
