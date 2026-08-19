@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 
+// Fetches every active product in a category and renames the Prisma relation keys to category/sizes.
 export async function getAllProductsByCategory(categoryId) {
   const products = await prisma.products.findMany({
     where: { category_id: BigInt(categoryId), deleted_at: null },

@@ -6,6 +6,7 @@ import logger from './config/logger.js';
 
 const PORT = process.env.PORT || 4000;
 
+// Connects to the database, then starts the HTTP server.
 async function start() {
   try {
     await prisma.$connect();
