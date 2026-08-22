@@ -1,6 +1,6 @@
 import prisma from '../config/prisma.js';
 
-// Validates requested quantities against current stock, then upserts (increments) each size line in the bag.
+// Validates requested quantities (plus whatever's already in the bag) against current stock, then upserts (increments) each size line in the bag.
 export async function addToBag(custUserId, productId, items) {
   const sizes = await prisma.product_sizes.findMany({
     where: {
@@ -11,8 +11,21 @@ export async function addToBag(custUserId, productId, items) {
   });
   const byS = new Map(sizes.map((s) => [s.size, s]));
 
+  const existingRows = await prisma.temp_order.findMany({
+    where: {
+      cust_user_id: BigInt(custUserId),
+      product_size_id: { in: sizes.map((s) => s.id) },
+    },
+  });
+  const existingBySizeId = new Map(existingRows.map((r) => [r.product_size_id.toString(), r.quantity]));
+
   const insufficient = items
-    .filter(({ size, quantity }) => !byS.has(size) || byS.get(size).stock < BigInt(quantity))
+    .filter(({ size, quantity }) => {
+      const productSize = byS.get(size);
+      if (!productSize) return true;
+      const existingQty = existingBySizeId.get(productSize.id.toString()) ?? 0n;
+      return productSize.stock < existingQty + BigInt(quantity);
+    })
     .map((i) => i.size);
 
   if (insufficient.length > 0) {
@@ -55,6 +68,7 @@ export async function getBag(custUserId) {
   return rows.map(({ product_sizes, ...row }) => ({
     ...row,
     size: product_sizes.size,
+    stock: product_sizes.stock,
     product: product_sizes.products,
   }));
 }
