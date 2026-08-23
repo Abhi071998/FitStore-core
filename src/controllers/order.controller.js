@@ -1,9 +1,14 @@
 import { submitOrder, getOrders, cancelOrderItem } from '../services/order.service.js';
 
-// Converts the caller's bag into a pending_approval order and clears the bag.
+// Converts the caller's bag into a pending_approval order, stores the shipping details, clears the bag, and emails the store.
 export async function submitOrderHandler(req, res, next) {
   try {
-    const order = await submitOrder(req.custUser.id);
+    const { name, email, addressLine, city, state, pincode } = req.body;
+    if (!name || !email || !addressLine || !city || !state || !pincode) {
+      return res.status(400).json({ message: 'name, email, addressLine, city, state and pincode are required' });
+    }
+
+    const order = await submitOrder(req.custUser.id, { name, email, addressLine, city, state, pincode });
     res.status(201).json(order);
   } catch (err) {
     next(err);

@@ -1,11 +1,14 @@
 import prisma from '../config/prisma.js';
+import { sendOrderNotification } from './mail.service.js';
 
 // Submits the whole bag as one order. Stock is reserved here, not at
 // add-to-bag time - each line is checked and decremented atomically
 // (the WHERE clause enforces stock >= quantity at the DB level), so a
 // stock shortfall on any single line rolls back the entire submission
-// and nothing is left partially reserved.
-export async function submitOrder(custUserId) {
+// and nothing is left partially reserved. No payment gateway yet, so a
+// notification email stands in for it - the order is still created and
+// stock still reserved even if that email fails to send.
+export async function submitOrder(custUserId, shipping) {
   const bagItems = await prisma.temp_order.findMany({
     where: { cust_user_id: BigInt(custUserId) },
     include: { product_sizes: { include: { products: true } } },
@@ -17,9 +20,18 @@ export async function submitOrder(custUserId) {
     throw err;
   }
 
-  return prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx) => {
     const order = await tx.orders.create({
-      data: { cust_user_id: BigInt(custUserId), status: 'pending_approval' },
+      data: {
+        cust_user_id: BigInt(custUserId),
+        status: 'pending_approval',
+        shipping_name: shipping.name,
+        shipping_email: shipping.email,
+        shipping_address: shipping.addressLine,
+        shipping_city: shipping.city,
+        shipping_state: shipping.state,
+        shipping_pincode: shipping.pincode,
+      },
     });
 
     for (const item of bagItems) {
@@ -50,6 +62,10 @@ export async function submitOrder(custUserId) {
 
     return order;
   });
+
+  await sendOrderNotification(order, bagItems);
+
+  return order;
 }
 
 // Lists a customer's orders with each line item's size and product info joined in.

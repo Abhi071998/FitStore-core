@@ -103,12 +103,18 @@ model temp_order {
 // A submitted bag, pending admin approval. Stock is reserved (decremented)
 // the moment an order is created, not when items are added to the bag.
 model orders {
-  id           BigInt    @id @default(autoincrement())
-  cust_user_id BigInt
-  status       String    @default("pending_approval") @db.VarChar(30)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  decided_at   DateTime?
+  id               BigInt    @id @default(autoincrement())
+  cust_user_id     BigInt
+  status           String    @default("pending_approval") @db.VarChar(30)
+  shipping_name    String?   @db.VarChar(255)
+  shipping_email   String?   @db.VarChar(255)
+  shipping_address String?
+  shipping_city    String?   @db.VarChar(100)
+  shipping_state   String?   @db.VarChar(100)
+  shipping_pincode String?   @db.VarChar(20)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  decided_at       DateTime?
 
   cust_user   cust_user     @relation(fields: [cust_user_id], references: [id], onDelete: Cascade)
   order_items order_items[]
