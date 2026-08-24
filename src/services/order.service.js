@@ -9,18 +9,25 @@ import { sendOrderNotification } from './mail.service.js';
 // notification email stands in for it - the order is still created and
 // stock still reserved even if that email fails to send.
 export async function submitOrder(custUserId, shipping) {
-  const bagItems = await prisma.temp_order.findMany({
-    where: { cust_user_id: BigInt(custUserId) },
-    include: { product_sizes: { include: { products: true } } },
-  });
+  const { order, bagItems } = await prisma.$transaction(async (tx) => {
+    // Lock this customer's bag rows first. A near-simultaneous duplicate
+    // submission (double-click, a retried request) blocks here until this
+    // transaction commits and the bag rows are gone, instead of both reading
+    // the same bag and each creating their own order - which is how one
+    // "Place Order" click was producing multiple orders and multiple emails.
+    await tx.$queryRaw`SELECT id FROM temp_order WHERE cust_user_id = ${BigInt(custUserId)} FOR UPDATE`;
 
-  if (bagItems.length === 0) {
-    const err = new Error('Bag is empty');
-    err.status = 400;
-    throw err;
-  }
+    const bagItems = await tx.temp_order.findMany({
+      where: { cust_user_id: BigInt(custUserId) },
+      include: { product_sizes: { include: { products: true } } },
+    });
 
-  const order = await prisma.$transaction(async (tx) => {
+    if (bagItems.length === 0) {
+      const err = new Error('Bag is empty');
+      err.status = 400;
+      throw err;
+    }
+
     const order = await tx.orders.create({
       data: {
         cust_user_id: BigInt(custUserId),
@@ -60,7 +67,7 @@ export async function submitOrder(custUserId, shipping) {
 
     await tx.temp_order.deleteMany({ where: { cust_user_id: BigInt(custUserId) } });
 
-    return order;
+    return { order, bagItems };
   });
 
   await sendOrderNotification(order, bagItems);
@@ -76,14 +83,19 @@ export async function getOrders(custUserId) {
     orderBy: { id: 'desc' },
   });
 
-  return orders.map((order) => ({
-    ...order,
-    order_items: order.order_items.map(({ product_sizes, ...item }) => ({
+  return orders.map((order) => {
+    const items = order.order_items.map(({ product_sizes, ...item }) => ({
       ...item,
       size: product_sizes.size,
       product: product_sizes.products,
-    })),
-  }));
+    }));
+
+    const total = items
+      .filter((item) => item.status === 'active')
+      .reduce((sum, item) => sum + Number(item.unit_price) * Number(item.quantity), 0);
+
+    return { ...order, order_items: items, total };
+  });
 }
 
 // Only reversible while the parent order is still pending_approval - once
