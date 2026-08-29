@@ -8,15 +8,18 @@ datasource db {
 }
 
 model categories {
-  id         BigInt     @id @default(autoincrement())
-  name       String     @unique(map: "uni_categories_name") @db.VarChar(255)
-  created_at DateTime?  @db.Timestamptz(6)
-  updated_at DateTime?  @db.Timestamptz(6)
-  deleted_at DateTime?  @db.Timestamptz(6)
-  image_url  String?
-  products   products[]
+  id               BigInt          @id @default(autoincrement())
+  name             String          @unique(map: "uni_categories_name") @db.VarChar(255)
+  image_url        String?
+  created_at       DateTime?       @db.Timestamptz(6)
+  updated_at       DateTime?       @db.Timestamptz(6)
+  deleted_at       DateTime?       @db.Timestamptz(6)
+  category_type_id BigInt?
+  category_types   category_types? @relation(fields: [category_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_categories_category_type")
+  products         products[]
 
   @@index([deleted_at], map: "idx_categories_deleted_at")
+  @@index([category_type_id], map: "idx_categories_category_type_id")
 }
 
 model product_sizes {
@@ -27,9 +30,9 @@ model product_sizes {
   created_at  DateTime?     @db.Timestamptz(6)
   updated_at  DateTime?     @db.Timestamptz(6)
   deleted_at  DateTime?     @db.Timestamptz(6)
-  order_items order_items[]
   products    products      @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_products_sizes")
   temp_order  temp_order[]
+  order_items order_items[]
 
   @@index([deleted_at], map: "idx_product_sizes_deleted_at")
   @@index([product_id], map: "idx_product_sizes_product_id")
@@ -68,6 +71,33 @@ model users {
   deleted_at DateTime? @db.Timestamptz(6)
 
   @@index([deleted_at], map: "idx_users_deleted_at")
+}
+
+model admin_content {
+  id                   BigInt    @id @default(autoincrement())
+  about_us_img         String?
+  about_us_title       String?   @db.VarChar(255)
+  about_us_description String?
+  about_us_tagline1    String?   @db.VarChar(255)
+  about_us_tagline2    String?   @db.VarChar(255)
+  about_us_tagline3    String?   @db.VarChar(255)
+  about_us_tagline4    String?   @db.VarChar(255)
+  about_us_estb_year   String?   @db.VarChar(10)
+  about_us_visit_us    String?
+  about_us_email       String?   @db.VarChar(255)
+  created_at           DateTime? @db.Timestamptz(6)
+  updated_at           DateTime? @db.Timestamptz(6)
+}
+
+model category_types {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "uni_category_types_name") @db.VarChar(255)
+  created_at DateTime?    @db.Timestamptz(6)
+  updated_at DateTime?    @db.Timestamptz(6)
+  deleted_at DateTime?    @db.Timestamptz(6)
+  categories categories[]
+
+  @@index([deleted_at], map: "idx_category_types_deleted_at")
 }
 
 model cust_user {
