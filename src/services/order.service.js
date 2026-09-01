@@ -70,7 +70,10 @@ export async function submitOrder(custUserId, shipping) {
     return { order, bagItems };
   });
 
-  await sendOrderNotification(order, bagItems);
+  // Fire-and-forget, per sendOrderNotification's own contract (it never
+  // throws) - awaiting it here was holding up the customer-facing response
+  // on a slow/failing SMTP connection instead of just this best-effort email.
+  sendOrderNotification(order, bagItems);
 
   return order;
 }
