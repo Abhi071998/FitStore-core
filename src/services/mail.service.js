@@ -38,6 +38,7 @@ export async function sendOrderNotification(order, items) {
         <p><strong>Total: ₹${total}</strong></p>
       `,
     });
+    logger.info(`Order notification email sent for order #${order.id}`);
   } catch (err) {
     logger.error(err, `Failed to send order notification email for order #${order.id}`);
   }
