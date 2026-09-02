@@ -24,23 +24,29 @@ export async function sendOrderNotification(order, items) {
     '',
     `Total: Rs.${total}`,
     '',
-    `To approve, go to: ${process.env.FRONTEND_URL}`,
+    `To approve, go to: ${process.env.FITSTORE_WEB}`,
   ].join('\n');
 
-  try {
-    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text }),
-    });
+  const chatIds = process.env.TELEGRAM_CHAT_ID.split(',').map((id) => id.trim());
 
-    if (!res.ok) {
-      throw new Error(`Telegram API responded ${res.status}: ${await res.text()}`);
-    }
+  await Promise.all(
+    chatIds.map(async (chatId) => {
+      try {
+        const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text }),
+        });
 
-    logger.info(`Order notification sent to Telegram for order #${order.id}`);
-  } catch (err) {
-    logger.error(err, `Failed to send Telegram order notification for order #${order.id}`);
-  }
+        if (!res.ok) {
+          throw new Error(`Telegram API responded ${res.status}: ${await res.text()}`);
+        }
+
+        logger.info(`Order notification sent to Telegram chat ${chatId} for order #${order.id}`);
+      } catch (err) {
+        logger.error(err, `Failed to send Telegram order notification to chat ${chatId} for order #${order.id}`);
+      }
+    })
+  );
 }
