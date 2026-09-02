@@ -1,5 +1,5 @@
 import prisma from '../config/prisma.js';
-import { sendOrderNotification } from './mail.service.js';
+import { sendOrderNotification } from './telegram.service.js';
 
 // Submits the whole bag as one order. Stock is reserved here, not at
 // add-to-bag time - each line is checked and decremented atomically
