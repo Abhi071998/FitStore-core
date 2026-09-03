@@ -89,6 +89,22 @@ model admin_content {
   updated_at           DateTime? @db.Timestamptz(6)
 }
 
+model hero_content {
+  id                       BigInt    @id @default(autoincrement())
+  hero_tag                 String?   @db.VarChar(255)
+  hero_heading_line1       String?   @db.VarChar(255)
+  hero_heading_highlight   String?   @db.VarChar(255)
+  hero_heading_line2       String?   @db.VarChar(255)
+  hero_description         String?
+  hero_image               String?
+  hero_primary_button_text String?   @db.VarChar(255)
+  hero_primary_button_link String?
+  hero_secondary_button_text String? @db.VarChar(255)
+  hero_secondary_button_link String?
+  created_at               DateTime? @db.Timestamptz(6)
+  updated_at               DateTime? @db.Timestamptz(6)
+}
+
 model category_types {
   id         BigInt       @id @default(autoincrement())
   name       String       @unique(map: "uni_category_types_name") @db.VarChar(255)
